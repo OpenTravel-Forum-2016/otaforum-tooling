@@ -1,0 +1,15 @@
+# Eclipse 
+.classpath
+.project
+.settings/
+
+# Intellij
+.idea/
+*.iml
+*.iws
+
+# Maven
+*/target/
+
+# OTM-DE
+*.bak
