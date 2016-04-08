@@ -60,7 +60,7 @@ public class MockContentProvider {
 				File templateFile = templateFiles.remove( 0 );
 				
 				templateFiles.add( templateFile ); // move this file to the end of the list
-				template = getTemplate( templateFile );
+				template = getTemplate( templateFile, contentType );
 			}
 		}
 		return template;
@@ -116,15 +116,16 @@ public class MockContentProvider {
 	 * content of the given file.
 	 * 
 	 * @param templateFile  the file from which to initialize the template
+	 * @param contentType  the MIME type of the template contents
 	 * @return MockContentTemplate
 	 * @throws IOException  thrown if the content of the template file cannot be loaded
 	 */
-	private MockContentTemplate getTemplate(File templateFile) throws IOException {
+	private MockContentTemplate getTemplate(File templateFile, String contentType) throws IOException {
 		String cacheKey = templateFile.getCanonicalPath();
 		MockContentTemplate template = templateCache.get( cacheKey );
 		
 		if (template == null) {
-			template = new MockContentTemplate( templateFile );
+			template = new MockContentTemplate( templateFile, contentType );
 			templateCache.add( template );
 		}
 		return template;

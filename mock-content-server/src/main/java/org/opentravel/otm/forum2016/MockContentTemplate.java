@@ -37,14 +37,16 @@ public class MockContentTemplate implements Cacheable {
 	
 	private String filePath;
 	private String template;
+	private String contentType;
 	
 	/**
 	 * Constructor that initializes the template from the contents of the specified file.
 	 * 
 	 * @param templateFile  the file system location of the mock content template
+	 * @param contentType  the MIME type of the template contents
 	 * @throws IOException  thrown if the content of the template file cannot be loaded
 	 */
-	public MockContentTemplate(File templateFile) throws IOException {
+	public MockContentTemplate(File templateFile, String contentType) throws IOException {
 		try (Reader fileReader = new FileReader( templateFile )) {
 			StringWriter writer = new StringWriter( (int) templateFile.length() );
 			char[] buffer = new char[1024];
@@ -55,6 +57,7 @@ public class MockContentTemplate implements Cacheable {
 			}
 			this.filePath = templateFile.getCanonicalPath();
 			this.template = writer.toString();
+			this.contentType = contentType;
 		}
 	}
 	
@@ -89,6 +92,15 @@ public class MockContentTemplate implements Cacheable {
 			lastMatch = m.end();
 		}
 		writer.write( template.substring( lastMatch ) );
+	}
+
+	/**
+	 * Returns the MIME type of the template contents.
+	 *
+	 * @return String
+	 */
+	public String getContentType() {
+		return contentType;
 	}
 
 	/**

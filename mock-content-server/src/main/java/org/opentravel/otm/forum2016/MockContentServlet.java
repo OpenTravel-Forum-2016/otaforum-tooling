@@ -57,6 +57,7 @@ public class MockContentServlet extends HttpServlet {
 	 * @throws ServletException  thrown if the servlet request cannot be processed
 	 * @throws IOException  thrown if the servlet response cannot be written to
 	 */
+	@SuppressWarnings("unchecked")
 	private void processMockRequest(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		MockFolderLocation mockFolder = MockFolderLocation.find( req.getPathInfo(), repositoryLocation );
 		List<String> contentTypes = getContentTypes( req );
@@ -64,7 +65,12 @@ public class MockContentServlet extends HttpServlet {
 		
 		if (mockFolder != null) {
 			for (String contentType : contentTypes) {
-				template = contentProvider.getNextTemplate( mockFolder.getFolderLocation(), req.getMethod(), contentType );
+				String requestMethod = req.getMethod();
+				
+				if ((requestMethod == null) || requestMethod.equals("HEAD")) {
+					requestMethod = "GET";
+				}
+				template = contentProvider.getNextTemplate( mockFolder.getFolderLocation(), requestMethod, contentType );
 				if (template != null) break;
 			}
 		}
@@ -86,8 +92,9 @@ public class MockContentServlet extends HttpServlet {
 						requestParams.put( paramName, paramValue[0] );
 					}
 				}
-				resp.setStatus( 200 );
 				template.processMockContent( requestParams, resp.getWriter() );
+				resp.setContentType( template.getContentType() );
+				resp.setStatus( 200 );
 			}
 			
 		} else {
@@ -116,6 +123,10 @@ public class MockContentServlet extends HttpServlet {
 			for (String ct : ctList) {
 				if (supportedContentTypes.contains( ct )) {
 					contentTypes.add( ct );
+					
+				} else if ("*/*".equals( ct )) {
+					contentTypes.addAll( supportedContentTypes );
+					break;
 				}
 			}
 			
