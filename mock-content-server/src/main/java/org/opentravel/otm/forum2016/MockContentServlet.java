@@ -193,7 +193,22 @@ public class MockContentServlet extends HttpServlet {
 	 */
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		processMockRequest( req, resp );
+		if (req.getPathInfo().equals( refreshContentUri )) {
+			try {
+				refreshGitRepository();
+				resp.setStatus( 204 );
+				
+			} catch (Throwable t) {
+				PrintWriter writer = resp.getWriter();
+				
+				resp.setStatus( 500 );
+				resp.addHeader( "Content-Type", "text/plain" );
+				writer.print( "An error occurred while refreshing the mock content repository." );
+				writer.flush();
+			}
+		} else {
+			processMockRequest( req, resp );
+		}
 	}
 	
 	/**
