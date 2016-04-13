@@ -30,18 +30,20 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * Retrieves the list of all API's published for the API Manager application.
+ * Retrieves the list of all documents associated with an API.
  * 
  * @author S. Livezey
  */
-public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
+public class GetAllAPIDocumentsOperation extends RESTClientOperation<List<APIDocument>> {
+	
+	private String apiId;
 	
 	/**
 	 * Constructor that assigns the factory that created this operation.
 	 * 
 	 * @param factory  the factory that created this operation
 	 */
-	public GetAllAPIsOperation(APIOperationFactory factory) {
+	public GetAllAPIDocumentsOperation(APIOperationFactory factory) {
 		super(factory);
 	}
 
@@ -49,8 +51,9 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	 * @see org.opentravel.otm.forum2016.am.RESTClientOperation#execute()
 	 */
 	@Override
-	public List<APISummary> execute() throws IOException {
-		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl() + "?limit=1000" ) );
+	public List<APIDocument> execute() throws IOException {
+		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl()
+				+ "/" + apiId + "/documents?limit=1000" ) );
 	}
 
 	/**
@@ -58,16 +61,16 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	protected List<APISummary> unmarshallResponse(HttpResponse response) throws IOException {
+	protected List<APIDocument> unmarshallResponse(HttpResponse response) throws IOException {
 		JsonObject responseJson = gson.fromJson( readPayload( response ), JsonObject.class );
 		JsonArray jsonApiList = responseJson.getAsJsonArray( "list" );
-		List<APISummary> apiList = new ArrayList<>();
+		List<APIDocument> docList = new ArrayList<>();
 		
 		for (JsonElement jsonApi : jsonApiList) {
 			Map<String,Object> apiValues = gson.fromJson( jsonApi, Map.class );
-			apiList.add( new APISummary( apiValues ) );
+			docList.add( new APIDocument( apiValues ) );
 		}
-		return apiList;
+		return docList;
 	}
 
 	/**
@@ -76,6 +79,24 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	@Override
 	protected String getSecurityScope() {
 		return "apim:api_view";
+	}
+
+	/**
+	 * Returns the value of the 'apiId' field.
+	 *
+	 * @return String
+	 */
+	public String getApiId() {
+		return apiId;
+	}
+
+	/**
+	 * Assigns the value of the 'apiId' field.
+	 *
+	 * @param apiId  the field value to assign
+	 */
+	public void setApiId(String apiId) {
+		this.apiId = apiId;
 	}
 	
 }

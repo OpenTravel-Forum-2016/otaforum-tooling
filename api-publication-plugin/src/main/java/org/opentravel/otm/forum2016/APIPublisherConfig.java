@@ -45,6 +45,15 @@ public class APIPublisherConfig {
     }
     
     /**
+     * Returns the URL of the WSO2 API store application.
+     * 
+     * @return String
+     */
+    public static String getWSO2StoreUrl() {
+    	return configProps.getProperty( "org.opentravel.apiPublisher.wso2StoreUrl" );
+    }
+    
+    /**
      * Returns the base URL endpoint location of the mock server.
      * 
      * @return String

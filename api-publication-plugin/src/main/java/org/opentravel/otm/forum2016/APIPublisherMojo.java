@@ -16,36 +16,44 @@
 
 package org.opentravel.otm.forum2016;
 
+import io.swagger.codegen.ClientOptInput;
+import io.swagger.codegen.ClientOpts;
+import io.swagger.codegen.CodegenConfig;
+import io.swagger.codegen.DefaultGenerator;
+import io.swagger.models.Swagger;
+import io.swagger.parser.SwaggerParser;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.opentravel.otm.forum2016.am.APIDetails;
+import org.opentravel.otm.forum2016.am.APIDocument;
 import org.opentravel.otm.forum2016.am.APIOperationFactory;
 import org.opentravel.otm.forum2016.am.APIStatusAction;
 import org.opentravel.otm.forum2016.am.APISummary;
 import org.opentravel.otm.forum2016.am.APIVisibility;
 import org.opentravel.otm.forum2016.am.ChangeAPIStatusOperation;
+import org.opentravel.otm.forum2016.am.CreateAPIDocumentOperation;
 import org.opentravel.otm.forum2016.am.CreateAPIOperation;
+import org.opentravel.otm.forum2016.am.DeleteAPIDocumentOperation;
+import org.opentravel.otm.forum2016.am.GetAllAPIDocumentsOperation;
 import org.opentravel.otm.forum2016.am.GetAllAPIsOperation;
 import org.opentravel.otm.forum2016.am.OAuth2ClientConfig;
 import org.opentravel.otm.forum2016.am.SwaggerDocument;
 import org.opentravel.otm.forum2016.am.UpdateAPIOperation;
+import org.opentravel.otm.forum2016.am.UploadAPIDocumentOperation;
 import org.opentravel.schemacompiler.ioc.CompilerExtensionRegistry;
+import org.opentravel.schemacompiler.model.TLModel;
 import org.opentravel.schemacompiler.task.SwaggerCompilerTask;
 import org.opentravel.schemacompiler.util.SchemaCompilerException;
-import org.opentravel.schemacompiler.validate.FindingMessageFormat;
-import org.opentravel.schemacompiler.validate.FindingType;
-import org.opentravel.schemacompiler.validate.ValidationFindings;
 
 /**
  * Maven plugin that scans all top-level project directories for OTM models.  API
@@ -56,23 +64,12 @@ import org.opentravel.schemacompiler.validate.ValidationFindings;
  */
 @Mojo( name = "publish-api", defaultPhase = LifecyclePhase.INSTALL, threadSafe=true )
 @Execute( goal = "publish-api", phase = LifecyclePhase.INSTALL )
-public class APIPublisherMojo extends AbstractMojo {
+public class APIPublisherMojo extends AbstractAPIPublisherMojo {
+	
+	private static final String SWAGGER_DOCUMENT_FORMAT = "html";
 	
 	private APIOperationFactory opFactory = new APIOperationFactory();
-	private Log log = getLog();
 	
-	/**
-	 * Root folder of the project for which the build is running.
-	 */
-	@Parameter( defaultValue = "${project.basedir}", readonly = true )
-	private File projectFolder;
-	
-    /**
-     * The binding style for generated schemas and services (default is 'OTA2').
-     */
-	@Parameter
-    protected String bindingStyle;
-
 	/**
 	 * @see org.apache.maven.plugin.Mojo#execute()
 	 */
@@ -96,11 +93,17 @@ public class APIPublisherMojo extends AbstractMojo {
 				
 				for (File otpFile : otpFiles) {
 					try {
-						List<File> swaggerFiles = compileSwaggerDocuments( otpFile, context );
+						log.info("  Compiling OTM Project: " + otpFile.getName());
+						TLModel model = loadModel( otpFile );
 						
-						for (File swaggerFile : swaggerFiles) {
-							log.info("  Publishing Swagger Document to WSO2: " + swaggerFile.getName());
-							publishSwaggerAPI( swaggerFile, context );
+						if (model != null) {
+							File outputFolder = new File( projectFolder, "/.target/" + context + "/" + otpFile.getName() );
+							List<File> swaggerFiles = compileSwaggerDocuments( model, context, outputFolder );
+							
+							for (File swaggerFile : swaggerFiles) {
+								log.info("  Publishing Swagger Document to WSO2: " + swaggerFile.getName());
+								publishSwaggerAPI( swaggerFile, context );
+							}
 						}
 						
 					} catch (SchemaCompilerException e) {
@@ -115,40 +118,6 @@ public class APIPublisherMojo extends AbstractMojo {
 	}
 	
 	/**
-	 * Returns the list of top-level context folders for the project.
-	 * 
-	 * @return List<File>
-	 */
-	private List<File> getContextFolders() {
-		List<File> contextFolders = new ArrayList<>();
-		
-		for (File item : projectFolder.listFiles()) {
-			if (item.isDirectory() && !item.getName().startsWith(".")) {
-				contextFolders.add( item );
-			}
-		}
-		return contextFolders;
-	}
-	
-	/**
-	 * Returns the list of OTM project files in the specified context folder.
-	 * 
-	 * @param contextFolder  the context folder to search
-	 * @param otmProjectFiles  the list to which all OTP files will be appended
-	 */
-	private void findOTMProjects(File contextFolder, List<File> otmProjectFiles) {
-		if (contextFolder.isFile()) {
-			if (contextFolder.getName().toLowerCase().endsWith( ".otp" )) {
-				otmProjectFiles.add( contextFolder );
-			}
-		} else {
-			for (File item : contextFolder.listFiles()) {
-				findOTMProjects( item, otmProjectFiles );
-			}
-		}
-	}
-	
-	/**
 	 * Loads the specified OTM project file and generates Swagger documents in the project build
 	 * directory.  All of the generated swagger documents are returned by this method.
 	 * 
@@ -157,51 +126,25 @@ public class APIPublisherMojo extends AbstractMojo {
 	 * @return List<File>
 	 * @throws SchemaCompilerException  thrown if an error occurs during Swagger document generation
 	 */
-	private List<File> compileSwaggerDocuments(File otpFile, String context) throws SchemaCompilerException {
-		File outputFolder = new File( projectFolder, "/.target/" + context + "/" + otpFile.getName() );
+	private List<File> compileSwaggerDocuments(TLModel model, String context, File outputFolder)
+			throws SchemaCompilerException {
 		SwaggerCompilerTask swaggerTask = new SwaggerCompilerTask();
 		List<File> swaggerFiles = new ArrayList<>();
-		ValidationFindings findings;
 		
-		log.info("  Compiling OTM Project: " + otpFile.getName());
 		cleanOutputFolder( outputFolder );
 		outputFolder.mkdirs();
 		
 		swaggerTask.setResourceBaseUrl( APIPublisherConfig.getMockServerUrl() );
 		swaggerTask.setOutputFolder( outputFolder.getAbsolutePath() );
 		swaggerTask.setGenerateExamples( false );
-		findings = swaggerTask.compileOutput( otpFile );
+		swaggerTask.compileOutput( model );
 		
-		if (findings.hasFinding()) {
-			log.info("  Errors/Warnings:");
-			
-			for (String message : findings.getAllValidationMessages( FindingMessageFormat.IDENTIFIED_FORMAT )) {
-				log.info("    " + message);
-			}
-		}
-		
-		if (!findings.hasFinding( FindingType.ERROR )) {
-			for (File generatedFile : swaggerTask.getGeneratedFiles()) {
-				if (generatedFile.getName().toLowerCase().endsWith(".swagger")) {
-					swaggerFiles.add( generatedFile );
-				}
+		for (File generatedFile : swaggerTask.getGeneratedFiles()) {
+			if (generatedFile.getName().toLowerCase().endsWith(".swagger")) {
+				swaggerFiles.add( generatedFile );
 			}
 		}
 		return swaggerFiles;
-	}
-	
-	/**
-	 * Recursively deletes the contents of the specified folder.
-	 * 
-	 * @param outputFolder  the output folder to clean
-	 */
-	private void cleanOutputFolder(File outputFolder) {
-		if (outputFolder.isDirectory()) {
-			for (File folderItem : outputFolder.listFiles()) {
-				cleanOutputFolder( folderItem );
-			}
-		}
-		outputFolder.delete();
 	}
 	
 	/**
@@ -217,6 +160,7 @@ public class APIPublisherMojo extends AbstractMojo {
 		APIDetails api = createAPIDefinition( swaggerDoc, context );
 		String existingApiId = getExistingApiID( swaggerDoc );
 		
+		// Publish the API specification
 		if (existingApiId == null) { // Create a new API
 			CreateAPIOperation createOp = opFactory.newCreateAPIOperation();
 			ChangeAPIStatusOperation statusOp = opFactory.newChangeAPIStatusOperation();
@@ -244,6 +188,133 @@ public class APIPublisherMojo extends AbstractMojo {
 			updateOp.setApi( api );
 			updateOp.execute();
 			log.info("    API updated successfully.");
+		}
+		
+		// Generate HTML documentation for the Swagger API
+		Swagger swagger = new SwaggerParser().read( swaggerFile.getAbsolutePath() );
+		ClientOptInput docgenInput = new ClientOptInput().opts( new ClientOpts() ).swagger( swagger );
+		CodegenConfig swaggerDocConfig = getSwaggerDocumentConfig();
+		File docFolder = new File( swaggerFile.getParentFile(), "/html" );
+		File docFile = new File( docFolder, "/index.html" );
+		
+		swaggerDocConfig.additionalProperties().put( "appName", swaggerDoc.getApiName() + " API Specification" );
+		swaggerDocConfig.additionalProperties().put( "version", swaggerDoc.getApiVersion() );
+		swaggerDocConfig.additionalProperties().put( "appDescription", swaggerDoc.getDescription() );
+		swaggerDocConfig.additionalProperties().put( "infoUrl", "http://www.opentravel.org" );
+		swaggerDocConfig.additionalProperties().put( "infoEmail", "info@opentravel.org" );
+		swaggerDocConfig.setOutputDir( docFolder.getAbsolutePath() );
+		docgenInput.setConfig( swaggerDocConfig );
+		new DefaultGenerator().opts( docgenInput ).generate();
+		
+		// Publish all documents associated with the API
+		GetAllAPIDocumentsOperation getDocsOp = opFactory.newGetAllAPIDocumentsOperation();
+		getDocsOp.setApiId( api.getId() );
+		
+		List<APIDocument> existingDocs = getDocsOp.execute();
+		List<String> publishedFilenames = new ArrayList<>();
+		File swaggerFolder = swaggerFile.getParentFile();
+		
+		publishAPIDocument( "API Documentation", docFile, api, existingDocs ); // publish the HTML documentation
+		
+		for (File file : swaggerFolder.listFiles()) {
+			if (file.isFile() && !file.getName().toLowerCase().endsWith(".swagger")) {
+				publishAPIDocument( file.getName(), file, api, existingDocs );
+				publishedFilenames.add( file.getName() );
+			}
+		}
+		
+		// Delete API documents (only of type OTHER) that no longer exist
+		for (APIDocument doc : existingDocs) {
+			if (doc.getType().equals("OTHER") && !publishedFilenames.contains( doc.getName() )) {
+				try {
+					DeleteAPIDocumentOperation deleteDocOp = opFactory.newDeleteAPIDocumentOperation();
+					
+					deleteDocOp.setApiId( api.getApiDefinition() );
+					deleteDocOp.setDocumentId( doc.getId() );
+					deleteDocOp.execute();
+					
+				} catch (IOException e) {
+					log.warn("Unable to delete obsolete API document: " + doc.getName());
+				}
+			}
+		}
+		log.info("    API documentation published.");
+	}
+	
+	/**
+	 * Returns the Swagger code generation configuration for generating HTML documentation.
+	 * 
+	 * @return CodegenConfig
+	 */
+    private CodegenConfig getSwaggerDocumentConfig() {
+        ServiceLoader<CodegenConfig> loader = ServiceLoader.load(CodegenConfig.class);
+        CodegenConfig config = null;
+        
+        for (CodegenConfig c : loader) {
+            if (SWAGGER_DOCUMENT_FORMAT.equals( c.getName() )) {
+                config = c;
+                break;
+            }
+        }
+        return config;
+    }
+    
+	/**
+	 * Publishes the given file as a document of the API.
+	 * 
+	 * @param docName  the name of the document as it will appear in the API documentation listing
+	 * @param docFile  the document file to publish
+	 * @param api  the API with which the document should be associated
+	 * @param existingDocs  the list of existing documents associated with the API
+	 */
+	private void publishAPIDocument(String docName, File docFile, APIDetails api, List<APIDocument> existingDocs) {
+		try {
+			UploadAPIDocumentOperation uploadOp = opFactory.newUploadAPIDocumentOperation();
+			String filename = docFile.getName();
+			String contentType = "text/html";
+			String otherTypeName = null;
+			APIDocument apiDoc = null;
+			
+			// Check to see if the document has already been published
+			for (APIDocument doc : existingDocs) {
+				if (docName.equals( doc.getName() )) {
+					apiDoc = doc;
+					break;
+				}
+			}
+			
+			if (filename.endsWith( ".schema.json" )) {
+				otherTypeName = "JSON Schema";
+				contentType = "application/json";
+				
+			} else if (filename.endsWith( ".xsd" )) {
+				otherTypeName = "XML Schema";
+				contentType = "application/xml";
+			}
+			
+			if (apiDoc == null) { // need to publish a new document record
+				CreateAPIDocumentOperation createDocOp = opFactory.newCreateAPIDocumentOperation();
+				
+				apiDoc = new APIDocument();
+				apiDoc.setName( docName );
+				apiDoc.setSourceType( "FILE" );
+				apiDoc.setType( (otherTypeName == null) ? "HOWTO" : "OTHER" );
+				apiDoc.setOtherTypeName( otherTypeName );
+				apiDoc.setVisibility( "API_LEVEL" );
+				
+				createDocOp.setApiId( api.getId() );
+				createDocOp.setDocument( apiDoc );
+				apiDoc = createDocOp.execute();
+			}
+			
+			uploadOp.setApiId( api.getId() );
+			uploadOp.setDocumentId( apiDoc.getId() );
+			uploadOp.setContentFile( docFile );
+			uploadOp.setContentType( contentType );
+			uploadOp.execute();
+			
+		} catch (IOException e) {
+			log.warn("Error publishing API document: " + docFile.getName());
 		}
 	}
 	
@@ -323,7 +394,7 @@ public class APIPublisherMojo extends AbstractMojo {
             // Force the load of the extension registry class and the initialization of the default
             // compiler extension (as determined by the local configuration file).
             CompilerExtensionRegistry.getActiveExtension();
-
+            
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }

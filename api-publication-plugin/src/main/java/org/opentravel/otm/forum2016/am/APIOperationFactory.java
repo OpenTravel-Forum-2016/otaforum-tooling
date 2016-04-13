@@ -104,6 +104,42 @@ public class APIOperationFactory {
 	}
 	
 	/**
+	 * Returns a new <code>GetAllAPIDocumentsOperation</code> instance.
+	 * 
+	 * @return GetAllAPIDocumentsOperation
+	 */
+	public GetAllAPIDocumentsOperation newGetAllAPIDocumentsOperation() {
+		return new GetAllAPIDocumentsOperation( this );
+	}
+	
+	/**
+	 * Returns a new <code>CreateAPIDocumentOperation</code> instance.
+	 * 
+	 * @return CreateAPIDocumentOperation
+	 */
+	public CreateAPIDocumentOperation newCreateAPIDocumentOperation() {
+		return new CreateAPIDocumentOperation( this );
+	}
+	
+	/**
+	 * Returns a new <code>DeleteAPIDocumentOperation</code> instance.
+	 * 
+	 * @return DeleteAPIDocumentOperation
+	 */
+	public DeleteAPIDocumentOperation newDeleteAPIDocumentOperation() {
+		return new DeleteAPIDocumentOperation( this );
+	}
+	
+	/**
+	 * Returns a new <code>UploadAPIDocumentOperation</code> instance.
+	 * 
+	 * @return UploadAPIDocumentOperation
+	 */
+	public UploadAPIDocumentOperation newUploadAPIDocumentOperation() {
+		return new UploadAPIDocumentOperation( this );
+	}
+	
+	/**
 	 * Returns an API Manager authorization token for the specified scope.
 	 * 
 	 * @param scope  the security scope for the token to return

@@ -1,0 +1,35 @@
+<html>
+<head>
+	<title>$resource.name - API ReadMe</title>
+</head>
+<body>
+	<h2>$resource.name - API ReadMe</h2>
+	
+	<table cellspacing="0" cellpadding="3" border="1">
+		<tr>
+			<td>OTM Library</td>
+			<td>$resource.owningLibrary.name</td>
+		</tr>
+		<tr>
+			<td>Resource Name</td>
+			<td>$resource.name</td>
+		</tr>
+		<tr>
+			<td>Version</td>
+			<td>$resource.version</td>
+		</tr>
+		<tr>
+			<td>Operation(s)</td>
+			<td>
+			#foreach ( $action in $actionList )
+				$action.request.httpMethod ($action.actionId)<br/>
+			#end
+			</td>
+		</tr>
+		<tr>
+			<td>Documentation</td>
+			<td><a href="$apiStoreUrl/site/themes/fancy/templates/api/documentation/download.jag?tenant=carbon.super&resourceUrl=/registry/resource/_system/governance/apimgt/applicationdata/provider/admin/$resource.name/$resource.version/documentation/files/index.html">View Documentation</a></td>
+		</tr>
+	</table>
+</body>
+</html>

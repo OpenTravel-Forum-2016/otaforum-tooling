@@ -17,31 +17,27 @@
 package org.opentravel.otm.forum2016.am;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpDelete;
 import org.opentravel.otm.forum2016.APIPublisherConfig;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 /**
- * Retrieves the list of all API's published for the API Manager application.
+ * Deletes an API document from the API Manager application.
  * 
  * @author S. Livezey
  */
-public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
+public class DeleteAPIDocumentOperation extends RESTClientOperation<Boolean> {
+	
+	private String apiId;
+	private String documentId;
 	
 	/**
 	 * Constructor that assigns the factory that created this operation.
 	 * 
 	 * @param factory  the factory that created this operation
 	 */
-	public GetAllAPIsOperation(APIOperationFactory factory) {
+	public DeleteAPIDocumentOperation(APIOperationFactory factory) {
 		super(factory);
 	}
 
@@ -49,25 +45,17 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	 * @see org.opentravel.otm.forum2016.am.RESTClientOperation#execute()
 	 */
 	@Override
-	public List<APISummary> execute() throws IOException {
-		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl() + "?limit=1000" ) );
+	public Boolean execute() throws IOException {
+		return execute( new HttpDelete( APIPublisherConfig.getWSO2PublisherUrl() + "/" + apiId + "/documents/" + documentId ) );
 	}
 
 	/**
 	 * @see org.opentravel.otm.forum2016.am.RESTClientOperation#unmarshallResponse(org.apache.http.HttpResponse)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	protected List<APISummary> unmarshallResponse(HttpResponse response) throws IOException {
-		JsonObject responseJson = gson.fromJson( readPayload( response ), JsonObject.class );
-		JsonArray jsonApiList = responseJson.getAsJsonArray( "list" );
-		List<APISummary> apiList = new ArrayList<>();
-		
-		for (JsonElement jsonApi : jsonApiList) {
-			Map<String,Object> apiValues = gson.fromJson( jsonApi, Map.class );
-			apiList.add( new APISummary( apiValues ) );
-		}
-		return apiList;
+	protected Boolean unmarshallResponse(HttpResponse response) throws IOException {
+		int statusCode = response.getStatusLine().getStatusCode();
+		return (statusCode >= 200) && (statusCode <= 299);
 	}
 
 	/**
@@ -75,7 +63,43 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	 */
 	@Override
 	protected String getSecurityScope() {
-		return "apim:api_view";
+		return "apim:api_create";
 	}
-	
+
+	/**
+	 * Returns the value of the 'apiId' field.
+	 *
+	 * @return String
+	 */
+	public String getApiId() {
+		return apiId;
+	}
+
+	/**
+	 * Assigns the value of the 'apiId' field.
+	 *
+	 * @param apiId  the field value to assign
+	 */
+	public void setApiId(String apiId) {
+		this.apiId = apiId;
+	}
+
+	/**
+	 * Returns the value of the 'documentId' field.
+	 *
+	 * @return String
+	 */
+	public String getDocumentId() {
+		return documentId;
+	}
+
+	/**
+	 * Assigns the value of the 'documentId' field.
+	 *
+	 * @param documentId  the field value to assign
+	 */
+	public void setDocumentId(String documentId) {
+		this.documentId = documentId;
+	}
+
 }
