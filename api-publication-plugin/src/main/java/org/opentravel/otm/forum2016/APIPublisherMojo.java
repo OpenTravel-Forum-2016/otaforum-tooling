@@ -361,7 +361,7 @@ public class APIPublisherMojo extends AbstractAPIPublisherMojo {
 		newApi.setVisibility( APIVisibility.PUBLIC );
 		newApi.setCacheTimeout( 300 );
 		newApi.setProductionEndpointType( "http" );
-		newApi.setProductionEndpointUrl( getProductionEndpointUrl( swaggerDoc ) );
+		newApi.setProductionEndpointUrl( getProductionEndpointUrl( swaggerDoc, context ) );
 		newApi.setApiDefinition( swaggerDoc.getContent().toString() );
 		newApi.setTechnicalOwner( "OpenTravel Alliance" );
 		newApi.setTechnicalOwnerEmail( "info@opentravel.org" );
@@ -375,15 +375,16 @@ public class APIPublisherMojo extends AbstractAPIPublisherMojo {
 	 * Returns the production endpoint context for the Swagger document's API.
 	 * 
 	 * @param swaggerDoc  the Swagger document for which to return an endpoint URL
+	 * @param context  the root context under which the API should be published
 	 * @return String
 	 */
-	private String getProductionEndpointUrl(SwaggerDocument swaggerDoc) {
+	private String getProductionEndpointUrl(SwaggerDocument swaggerDoc, String context) {
 		String mockServerUrl = APIPublisherConfig.getMockServerUrl();
 		
 		if (mockServerUrl.endsWith("/")) {
 			mockServerUrl = mockServerUrl.substring( 0, mockServerUrl.length() - 1 );
 		}
-		return mockServerUrl + "/" + swaggerDoc.getApiName() + "/" + swaggerDoc.getApiVersion();
+		return mockServerUrl + "/" + context + "/" + swaggerDoc.getApiName() + "/" + swaggerDoc.getApiVersion();
 	}
 	
     /**
