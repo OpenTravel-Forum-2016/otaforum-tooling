@@ -88,6 +88,7 @@
 						<exclude>**/*.sh</exclude>
 						<exclude>src/test/resources/**</exclude>
 						<exclude>src/main/resources/**</exclude>
+						<exclude>src/main/webapp/**</exclude>
 					</excludes>
 				</configuration>
 				<executions>
