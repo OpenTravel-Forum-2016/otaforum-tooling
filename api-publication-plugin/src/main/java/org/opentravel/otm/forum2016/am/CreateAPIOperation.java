@@ -49,7 +49,7 @@ public class CreateAPIOperation extends RESTClientOperation<APIDetails> {
 	 */
 	@Override
 	public APIDetails execute() throws IOException {
-		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherUrl() );
+		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherApiBaseUrl() );
 		
 		request.setHeader( "Content-Type", "application/json" );
 		request.setEntity( new StringEntity( new Gson().toJson( api.toJson() ) ) );

@@ -50,7 +50,7 @@ public class GetAllAPIsOperation extends RESTClientOperation<List<APISummary>> {
 	 */
 	@Override
 	public List<APISummary> execute() throws IOException {
-		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl() + "?limit=1000" ) );
+		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherApiBaseUrl() + "?limit=1000" ) );
 	}
 
 	/**

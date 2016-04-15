@@ -46,7 +46,7 @@ public class GetAPIDetailsOperation extends RESTClientOperation<APIDetails> {
 	 */
 	@Override
 	public APIDetails execute() throws IOException {
-		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl() + "/" + id ) );
+		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherApiBaseUrl() + "/" + id ) );
 	}
 
 	/**

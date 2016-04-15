@@ -118,7 +118,7 @@ public class MockContentServlet extends HttpServlet {
 		String requestedType = req.getHeader( "Accept" );
 		
 		if (requestedType != null) {
-			String[] ctList = requestedType.split( "[,|;]" );
+			String[] ctList = requestedType.split( "\\s*[,|;]\\s*" );
 			
 			for (String ct : ctList) {
 				if (supportedContentTypes.contains( ct )) {

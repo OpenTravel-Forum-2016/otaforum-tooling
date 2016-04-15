@@ -1,9 +1,31 @@
 <html>
 <head>
 	<title>$resource.name - API ReadMe</title>
+    <style type="text/css">
+body { 
+	font-family: Trebuchet MS, sans-serif;
+	font-size: 15px;
+	color: #444;
+	margin-right: 24px;
+}
+h1	{
+	font-size: 25px;
+}
+h2	{
+	font-size: 20px;
+}
+h3	{
+	font-size: 16px;
+	font-weight: bold;
+}
+.techText {
+    font-family: Monaco, monospace;
+	font-size: 13px;
+}
+	</style>
 </head>
 <body>
-	<h2>$resource.name - API ReadMe</h2>
+	<h1>$resource.name - API ReadMe</h1>
 	
 	<table cellspacing="0" cellpadding="3" border="1">
 		<tr>
@@ -19,17 +41,41 @@
 			<td>$resource.version</td>
 		</tr>
 		<tr>
-			<td>Operation(s)</td>
+			<td>Additional Info</td>
 			<td>
-			#foreach ( $action in $actionList )
-				$action.request.httpMethod ($action.actionId)<br/>
-			#end
+				<a href="$apiStoreUrl/apis/info?name=$resource.name&version=$resource.version&provider=admin">View In API Store</a>
+				<br>
+				<a href="$apiPublisherUrl/info?name=$resource.name&version=$resource.version&provider=admin">View In API Publisher</a>
 			</td>
 		</tr>
-		<tr>
-			<td>Documentation</td>
-			<td><a href="$apiStoreUrl/site/themes/fancy/templates/api/documentation/download.jag?tenant=carbon.super&resourceUrl=/registry/resource/_system/governance/apimgt/applicationdata/provider/admin/$resource.name/$resource.version/documentation/files/index.html">View Documentation</a></td>
-		</tr>
 	</table>
+	
+	<br>
+	<h2>Operations</h2>
+	<table cellspacing="0" cellpadding="3" border="1">
+		<tr>
+			<th>ID</th>
+			<th>Path Template</th>
+			<th>Mock Service Base URLs</th>
+		<tr>
+		#foreach ( $action in $actionList )
+		<tr>
+			<td>$action.actionId</td>
+			<td nowrap="true"><span class="techText">$action.request.httpMethod $action.request.pathTemplate</span></td>
+			<td>
+				<table cellspacing="0" cellpadding="3" border="0">
+					<tr>
+						<td nowrap="true">Secure Gateway:</td>
+						<td nowrap="true"><span class="techText">$apiGatewayUrl/$context/$resource.name/$resource.version</span></td>
+					</tr><tr>
+						<td nowrap="true">Mock Server:</td>
+						<td nowrap="true"><span class="techText">$mockServerUrl/$context/$resource.name/$resource.version</span></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		#end
+	</table>
+	
 </body>
 </html>

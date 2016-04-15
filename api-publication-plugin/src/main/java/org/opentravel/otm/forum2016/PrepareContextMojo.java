@@ -67,7 +67,7 @@ public class PrepareContextMojo extends AbstractAPIPublisherMojo {
     
     private static VelocityEngine velocityEngine;
     
-	@Parameter( readonly = true, defaultValue = "${org.opentravel.otm.contextFolder}" )
+	@Parameter( readonly = true, defaultValue = "${contextFolder}" )
 	private String context;
 	
 	/**
@@ -190,9 +190,13 @@ public class PrepareContextMojo extends AbstractAPIPublisherMojo {
 			Template template = velocityEngine.getTemplate( TEMPLATE_LOCATION + "api-readme.vm", "UTF-8" );
 			VelocityContext context = new VelocityContext();
 			
+			context.put( "context", this.context );
 			context.put( "resource", group.getResource() );
 			context.put( "actionList", group.getActions() );
 			context.put( "apiStoreUrl", APIPublisherConfig.getWSO2StoreUrl() );
+			context.put( "apiPublisherUrl", APIPublisherConfig.getWSO2PublisherUrl() );
+			context.put( "apiGatewayUrl", APIPublisherConfig.getApiGatewayUrl() );
+			context.put( "mockServerUrl", APIPublisherConfig.getMockServerUrl() );
 			
 			template.merge( context, writer );
 			

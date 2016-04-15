@@ -46,7 +46,7 @@ public class ChangeAPIStatusOperation extends RESTClientOperation<Boolean> {
 	 */
 	@Override
 	public Boolean execute() throws IOException {
-		StringBuilder url = new StringBuilder( APIPublisherConfig.getWSO2PublisherUrl() );
+		StringBuilder url = new StringBuilder( APIPublisherConfig.getWSO2PublisherApiBaseUrl() );
 		HttpPost request;
 		
 		url.append( "/change-lifecycle?apiId=" ).append( apiId );

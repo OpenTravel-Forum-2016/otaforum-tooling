@@ -52,7 +52,7 @@ public class UploadAPIDocumentOperation extends RESTClientOperation<APIDocument>
 	 */
 	@Override
 	public APIDocument execute() throws IOException {
-		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherUrl()
+		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherApiBaseUrl()
 				+ "/" + apiId + "/documents/" + documentId + "/content" );
 		
 		request.setEntity( MultipartEntityBuilder.create().addBinaryBody( "file", contentFile,

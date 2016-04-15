@@ -36,7 +36,16 @@ public class APIPublisherConfig {
     private static Properties configProps;
     
     /**
-     * Returns the URL of the WSO2 publisher application.
+     * Returns the base URL of the WSO2 publisher API's.
+     * 
+     * @return String
+     */
+    public static String getWSO2PublisherApiBaseUrl() {
+    	return configProps.getProperty( "org.opentravel.apiPublisher.wso2PublisherAPI.baseUrl" );
+    }
+    
+    /**
+     * Returns the URL of the WSO2 API publisher application.
      * 
      * @return String
      */
@@ -51,6 +60,15 @@ public class APIPublisherConfig {
      */
     public static String getWSO2StoreUrl() {
     	return configProps.getProperty( "org.opentravel.apiPublisher.wso2StoreUrl" );
+    }
+    
+    /**
+     * Returns the base URL endpoint location of the API gateway.
+     * 
+     * @return String
+     */
+    public static String getApiGatewayUrl() {
+    	return configProps.getProperty( "org.opentravel.apiGateway.baseUrl" );
     }
     
     /**

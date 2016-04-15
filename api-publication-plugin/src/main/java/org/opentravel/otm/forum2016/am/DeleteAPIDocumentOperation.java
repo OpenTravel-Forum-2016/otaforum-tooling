@@ -46,7 +46,7 @@ public class DeleteAPIDocumentOperation extends RESTClientOperation<Boolean> {
 	 */
 	@Override
 	public Boolean execute() throws IOException {
-		return execute( new HttpDelete( APIPublisherConfig.getWSO2PublisherUrl() + "/" + apiId + "/documents/" + documentId ) );
+		return execute( new HttpDelete( APIPublisherConfig.getWSO2PublisherApiBaseUrl() + "/" + apiId + "/documents/" + documentId ) );
 	}
 
 	/**

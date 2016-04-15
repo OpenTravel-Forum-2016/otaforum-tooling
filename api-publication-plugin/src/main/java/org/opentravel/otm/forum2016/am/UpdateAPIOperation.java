@@ -49,7 +49,7 @@ public class UpdateAPIOperation extends RESTClientOperation<APIDetails> {
 	 */
 	@Override
 	public APIDetails execute() throws IOException {
-		HttpPut request = new HttpPut( APIPublisherConfig.getWSO2PublisherUrl() + "/" + api.getId() );
+		HttpPut request = new HttpPut( APIPublisherConfig.getWSO2PublisherApiBaseUrl() + "/" + api.getId() );
 		
 		request.setHeader( "Content-Type", "application/json" );
 		request.setEntity( new StringEntity( new Gson().toJson( api.toJson() ) ) );

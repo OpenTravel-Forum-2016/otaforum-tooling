@@ -52,7 +52,7 @@ public class GetAllAPIDocumentsOperation extends RESTClientOperation<List<APIDoc
 	 */
 	@Override
 	public List<APIDocument> execute() throws IOException {
-		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherUrl()
+		return execute( new HttpGet( APIPublisherConfig.getWSO2PublisherApiBaseUrl()
 				+ "/" + apiId + "/documents?limit=1000" ) );
 	}
 

@@ -50,7 +50,7 @@ public class CreateAPIDocumentOperation extends RESTClientOperation<APIDocument>
 	 */
 	@Override
 	public APIDocument execute() throws IOException {
-		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherUrl() + "/" + apiId + "/documents" );
+		HttpPost request = new HttpPost( APIPublisherConfig.getWSO2PublisherApiBaseUrl() + "/" + apiId + "/documents" );
 		
 		request.setHeader( "Content-Type", "application/json" );
 		request.setEntity( new StringEntity( new Gson().toJson( document.toJson() ) ) );
