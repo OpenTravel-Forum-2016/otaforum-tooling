@@ -20,9 +20,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.opentravel.schemacompiler.model.TLModel;
 import org.opentravel.schemacompiler.repository.Project;
 import org.opentravel.schemacompiler.repository.ProjectManager;
@@ -30,34 +27,25 @@ import org.opentravel.schemacompiler.util.SchemaCompilerException;
 import org.opentravel.schemacompiler.validate.FindingMessageFormat;
 import org.opentravel.schemacompiler.validate.FindingType;
 import org.opentravel.schemacompiler.validate.ValidationFindings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Base class for all API publisher Maven build plugins.
+ * Static utility methods that assist with the processing of OTM projects and models.
  * 
  * @author S. Livezey
  */
-public abstract class AbstractAPIPublisherMojo extends AbstractMojo {
+public class OTMProjectUtils {
 	
-	protected Log log = getLog();
-	
-	/**
-	 * Root folder of the project for which the build is running.
-	 */
-	@Parameter( defaultValue = "${project.basedir}", readonly = true )
-	protected File projectFolder;
-	
-    /**
-     * The binding style for generated schemas and services (default is 'OTA2').
-     */
-	@Parameter
-    protected String bindingStyle;
-	
+    private static final Logger log = LoggerFactory.getLogger( OTMProjectUtils.class );
+    
 	/**
 	 * Returns the list of top-level context folders for the project.
 	 * 
+	 * @param projectFolder  the root folder of the mock content workspace
 	 * @return List<File>
 	 */
-	protected List<File> getContextFolders() {
+	public static List<File> getContextFolders(File projectFolder) {
 		List<File> contextFolders = new ArrayList<>();
 		
 		for (File item : projectFolder.listFiles()) {
@@ -74,7 +62,7 @@ public abstract class AbstractAPIPublisherMojo extends AbstractMojo {
 	 * @param contextFolder  the context folder to search
 	 * @param otmProjectFiles  the list to which all OTP files will be appended
 	 */
-	protected void findOTMProjects(File contextFolder, List<File> otmProjectFiles) {
+	public static void findOTMProjects(File contextFolder, List<File> otmProjectFiles) {
 		if (contextFolder.isFile()) {
 			if (contextFolder.getName().toLowerCase().endsWith( ".otp" )) {
 				otmProjectFiles.add( contextFolder );
@@ -94,7 +82,7 @@ public abstract class AbstractAPIPublisherMojo extends AbstractMojo {
 	 * @return TLModel
 	 * @throws SchemaCompilerException
 	 */
-	protected TLModel loadModel(File otpFile) throws SchemaCompilerException {
+	public static TLModel loadModel(File otpFile) throws SchemaCompilerException {
         ValidationFindings findings = new ValidationFindings();
         ProjectManager projectManager = new ProjectManager(false);
         Project project = projectManager.loadProject( otpFile, findings);
@@ -111,20 +99,6 @@ public abstract class AbstractAPIPublisherMojo extends AbstractMojo {
 			model = project.getModel();
 		}
 		return model;
-	}
-	
-	/**
-	 * Recursively deletes the contents of the specified folder.
-	 * 
-	 * @param outputFolder  the output folder to clean
-	 */
-	protected void cleanOutputFolder(File outputFolder) {
-		if (outputFolder.isDirectory()) {
-			for (File folderItem : outputFolder.listFiles()) {
-				cleanOutputFolder( folderItem );
-			}
-		}
-		outputFolder.delete();
 	}
 	
 }

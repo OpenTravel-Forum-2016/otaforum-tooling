@@ -29,11 +29,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.opentravel.otm.forum2016.am.APIDetails;
 import org.opentravel.otm.forum2016.am.APIDocument;
 import org.opentravel.otm.forum2016.am.APIOperationFactory;
@@ -64,18 +67,31 @@ import org.opentravel.schemacompiler.util.SchemaCompilerException;
  */
 @Mojo( name = "publish-api", defaultPhase = LifecyclePhase.INSTALL, threadSafe=true )
 @Execute( goal = "publish-api", phase = LifecyclePhase.INSTALL )
-public class APIPublisherMojo extends AbstractAPIPublisherMojo {
+public class APIPublisherMojo extends AbstractMojo {
 	
 	private static final String SWAGGER_DOCUMENT_FORMAT = "html";
 	
 	private APIOperationFactory opFactory = new APIOperationFactory();
+	protected Log log = getLog();
+	
+	/**
+	 * Root folder of the project for which the build is running.
+	 */
+	@Parameter( defaultValue = "${project.basedir}", readonly = true )
+	protected File projectFolder;
+	
+    /**
+     * The binding style for generated schemas and services (default is 'OTA2').
+     */
+	@Parameter
+    protected String bindingStyle;
 	
 	/**
 	 * @see org.apache.maven.plugin.Mojo#execute()
 	 */
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		List<File> contextFolders = getContextFolders();
+		List<File> contextFolders = OTMProjectUtils.getContextFolders( projectFolder );
 		
 		// Initialize the binding style before compiling any models
 		if (bindingStyle != null) {
@@ -86,7 +102,7 @@ public class APIPublisherMojo extends AbstractAPIPublisherMojo {
 			String context = contextFolder.getName().replaceAll( "\\s+", "_" );
 			List<File> otpFiles;
 			
-			findOTMProjects( contextFolder, (otpFiles = new ArrayList<>() ) );
+			OTMProjectUtils.findOTMProjects( contextFolder, (otpFiles = new ArrayList<>() ) );
 			
 			if (!otpFiles.isEmpty()) {
 				log.info("Processing OTM Models for Context: " + context);
@@ -94,7 +110,7 @@ public class APIPublisherMojo extends AbstractAPIPublisherMojo {
 				for (File otpFile : otpFiles) {
 					try {
 						log.info("  Compiling OTM Project: " + otpFile.getName());
-						TLModel model = loadModel( otpFile );
+						TLModel model = OTMProjectUtils.loadModel( otpFile );
 						
 						if (model != null) {
 							File outputFolder = new File( projectFolder, "/.target/" + context + "/" + otpFile.getName() );
@@ -115,6 +131,20 @@ public class APIPublisherMojo extends AbstractAPIPublisherMojo {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Recursively deletes the contents of the specified folder.
+	 * 
+	 * @param outputFolder  the output folder to clean
+	 */
+	protected void cleanOutputFolder(File outputFolder) {
+		if (outputFolder.isDirectory()) {
+			for (File folderItem : outputFolder.listFiles()) {
+				cleanOutputFolder( folderItem );
+			}
+		}
+		outputFolder.delete();
 	}
 	
 	/**

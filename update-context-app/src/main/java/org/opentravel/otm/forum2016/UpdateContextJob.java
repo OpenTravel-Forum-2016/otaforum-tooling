@@ -25,12 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Execute;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -52,40 +46,56 @@ import org.opentravel.schemacompiler.model.TLModel;
 import org.opentravel.schemacompiler.model.TLResource;
 import org.opentravel.schemacompiler.util.SchemaCompilerException;
 import org.opentravel.schemacompiler.validate.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Maven plugin that generates Swagger API specifications from an OTM model and creates the
- * necessary paths in the local mock context directory.
+ * Generates Swagger API specifications from an OTM model and creates the
+ * necessary paths in the local mock context directory.  This job also creates
+ * sample mock responses and <code>ReadMe.html</code> files for each API operation
+ * defined in the OTM model(s).
  * 
  * @author S. Livezey
  */
-@Mojo( name = "prepare-context", defaultPhase = LifecyclePhase.NONE, threadSafe=true )
-@Execute( goal = "prepare-context", phase = LifecyclePhase.NONE )
-public class PrepareContextMojo extends AbstractAPIPublisherMojo {
+public class UpdateContextJob {
 	
     private static final String TEMPLATE_LOCATION = "/templates/";
+    private static final Logger log = LoggerFactory.getLogger( UpdateContextJob.class );
     
     private static VelocityEngine velocityEngine;
     
-	@Parameter( readonly = true, defaultValue = "${contextFolder}" )
+	private File projectFolder;
 	private String context;
 	
 	/**
-	 * @see org.apache.maven.plugin.Mojo#execute()
+	 * Constructor that assigns the name of the context folder in the current user
+	 * directory.
+	 * 
+	 * @param projectFolder  the root directory of the mock content workspace
+	 * @param context  the name of the context folder to update
 	 */
-	@Override
-	public void execute() throws MojoExecutionException, MojoFailureException {
+	public UpdateContextJob(File projectFolder, String context) {
+		this.projectFolder = projectFolder;
+		this.context = context;
+	}
+	
+	/**
+	 * Executes the job to perform the context folder updates.
+	 * 
+	 * @throws UpdateContextException  thrown if an error occurs during job execution
+	 */
+	public void execute() throws UpdateContextException {
 		File contextFolder = new File( projectFolder, "/" + context );
 		List<File> otpFiles = new ArrayList<>();
 		
 		if (context == null) {
-			throw new MojoFailureException("Context folder not specified.");
+			throw new UpdateContextException("Context folder not specified.");
 		}
 		if (!contextFolder.exists()) {
-			throw new MojoFailureException("Context folder not found: /" + context);
+			throw new UpdateContextException("Context folder not found: /" + context);
 		}
 		
-		findOTMProjects( contextFolder, otpFiles );
+		OTMProjectUtils.findOTMProjects( contextFolder, otpFiles );
 		
 		if (!otpFiles.isEmpty()) {
 			log.info("Processing OTM Models for Context: " + context);
@@ -93,7 +103,7 @@ public class PrepareContextMojo extends AbstractAPIPublisherMojo {
 			for (File otpFile : otpFiles) {
 				try {
 					log.info("  Loading OTM Project: " + otpFile.getName());
-					TLModel model = loadModel( otpFile );
+					TLModel model = OTMProjectUtils.loadModel( otpFile );
 					
 					if (model != null) {
 						Map<String,ActionGroup> actionGroups = new HashMap<>();
@@ -284,6 +294,59 @@ public class PrepareContextMojo extends AbstractAPIPublisherMojo {
 	}
 	
 	/**
+	 * Returns the root directory location that contains the context folder.
+	 *
+	 * @return File
+	 */
+	public File getProjectFolder() {
+		return projectFolder;
+	}
+	
+	/**
+	 * Assigns the root directory location that contains the context folder.
+	 *
+	 * @param projectFolder  the folder location to assign
+	 */
+	public void setProjectFolder(File projectFolder) {
+		this.projectFolder = projectFolder;
+	}
+	
+	/**
+	 * Returns the name of the context folder to update.
+	 *
+	 * @return String
+	 */
+	public String getContext() {
+		return context;
+	}
+	
+	/**
+	 * Assigns the name of the context folder to update.
+	 *
+	 * @param context  the context name to assign
+	 */
+	public void setContext(String context) {
+		this.context = context;
+	}
+	
+	/**
+	 * Initializes the Velocity template processing engine.
+	 */
+	static {
+		try {
+			VelocityEngine ve = new VelocityEngine();
+			
+			ve.setProperty( RuntimeConstants.RESOURCE_LOADER, "classpath" );
+			ve.setProperty( "classpath.resource.loader.class", ClasspathResourceLoader.class.getName() );
+			ve.setProperty("runtime.log.logsystem.class", "org.apache.velocity.runtime.log.NullLogSystem");
+			velocityEngine = ve;
+			
+		} catch (Throwable t) {
+			throw new ExceptionInInitializerError( t );
+		}
+	}
+	
+	/**
 	 * Groups the actions together that resolve to the same mock content folder.
 	 */
 	private static class ActionGroup {
@@ -330,23 +393,6 @@ public class PrepareContextMojo extends AbstractAPIPublisherMojo {
 			return actions;
 		}
 		
-	}
-	
-	/**
-	 * Initializes the Velocity template processing engine.
-	 */
-	static {
-		try {
-			VelocityEngine ve = new VelocityEngine();
-			
-			ve.setProperty( RuntimeConstants.RESOURCE_LOADER, "classpath" );
-			ve.setProperty( "classpath.resource.loader.class", ClasspathResourceLoader.class.getName() );
-			ve.setProperty("runtime.log.logsystem.class", "org.apache.velocity.runtime.log.NullLogSystem");
-			velocityEngine = ve;
-			
-		} catch (Throwable t) {
-			throw new ExceptionInInitializerError( t );
-		}
 	}
 	
 }
