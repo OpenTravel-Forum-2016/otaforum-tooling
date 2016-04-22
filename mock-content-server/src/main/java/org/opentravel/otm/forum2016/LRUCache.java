@@ -26,7 +26,7 @@ import java.util.HashMap;
  */
 public class LRUCache<C extends Cacheable> {
 	
-	public static final int DEFAULT_CAPACITY = 100;
+	public static final int DEFAULT_CAPACITY = 25;
 	
 	private int capacity;
 	private HashMap<String,Node> cache = new HashMap<>();

@@ -141,6 +141,32 @@ public class MockContentServlet extends HttpServlet {
 	 * not yet been cloned, this method will create a fresh cloned copy on the local
 	 * file system.
 	 * 
+	 * @param req  the HTTP servlet request
+	 * @param resp  the HTTP servlet response
+	 */
+	private void refreshGitRepository(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		PrintWriter writer = resp.getWriter();
+		
+		try {
+			refreshGitRepository();
+			resp.setStatus( 200 );
+			resp.addHeader( "Content-Type", "text/plain" );
+			writer.print( "Git repository refresh successful." );
+			
+		} catch (Throwable t) {
+			log.error( "An error occurred while refreshing the mock content repository.", t );
+			resp.setStatus( 500 );
+			resp.addHeader( "Content-Type", "text/plain" );
+			writer.print( "An error occurred while refreshing the mock content repository." );
+			writer.flush();
+		}
+	}
+	
+	/**
+	 * Refreshes the contents of the local Git repository.  If the repository has
+	 * not yet been cloned, this method will create a fresh cloned copy on the local
+	 * file system.
+	 * 
 	 * @throws Exception  thrown if the local copy of the Git repository cannot be refreshed
 	 */
 	private void refreshGitRepository() throws Exception {
@@ -148,6 +174,7 @@ public class MockContentServlet extends HttpServlet {
 				new GitRepositorySynchronizer(
 						MockServerConfig.getRemoteRepositoryUrl(), repositoryLocation )) {
 			synchronizer.synchronizeContent();
+			contentProvider.clearCache();
 		}
 	}
 	
@@ -171,18 +198,8 @@ public class MockContentServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		if (req.getPathInfo().equals( refreshContentUri )) {
-			try {
-				refreshGitRepository();
-				resp.setStatus( 204 );
-				
-			} catch (Throwable t) {
-				PrintWriter writer = resp.getWriter();
-				
-				resp.setStatus( 500 );
-				resp.addHeader( "Content-Type", "text/plain" );
-				writer.print( "An error occurred while refreshing the mock content repository." );
-				writer.flush();
-			}
+			refreshGitRepository( req, resp );
+			
 		} else {
 			processMockRequest( req, resp );
 		}
@@ -194,18 +211,8 @@ public class MockContentServlet extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		if (req.getPathInfo().equals( refreshContentUri )) {
-			try {
-				refreshGitRepository();
-				resp.setStatus( 204 );
-				
-			} catch (Throwable t) {
-				PrintWriter writer = resp.getWriter();
-				
-				resp.setStatus( 500 );
-				resp.addHeader( "Content-Type", "text/plain" );
-				writer.print( "An error occurred while refreshing the mock content repository." );
-				writer.flush();
-			}
+			refreshGitRepository( req, resp );
+			
 		} else {
 			processMockRequest( req, resp );
 		}
